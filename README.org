@@ -1,0 +1,515 @@
+* Emacs Configuration
+
+I try to stay out of my configs as much as possible, and to help me do that I
+keep a few things in mind:
+
+- only configure what I need.
+- keep everything declarative.
+- use tools with sane defaults.
+
+Sometimes I don't adhere to these, it is what it is.
+
+** Package Setup (use-package)
+Declaring upstream package archives: [[https://elpa.gnu.org][ELPA]] and [[https://melpa.org/][MELPA]].
+#+BEGIN_SRC emacs-lisp
+(require 'package)
+(setq package-archives '(("gnu" . "http://elpa.gnu.org/packages/")
+      	                ("melpa" . "https://melpa.org/packages/")))
+(package-initialize)
+#+END_SRC
+
+[[https://elpa.gnu.org/packages/use-package.html][use-package]] lets me declare and configure packages inside of a single macro.
+This keeps everything relatively declarative and isolated.
+#+BEGIN_SRC emacs-lisp
+(unless (package-installed-p 'use-package)
+  (package-install 'use-package))
+(require 'use-package)
+(setq use-package-always-ensure t)
+#+END_SRC
+
+** Global Configuration
+[[https://melpa.org/#/exec-path-from-shell][exec-path-from-shell]] ensures that Emacs will inherit my environment.  I connect
+to Emacs from a client, so this configurations runs conditionally if Emacs is a
+daemon.
+#+BEGIN_SRC emacs-lisp
+(use-package exec-path-from-shell
+  :ensure t
+  :if (daemonp)
+  :config
+  (setq exec-path-from-shell-variables '("PATH"))
+  (exec-path-from-shell-initialize))
+#+END_SRC
+
+*** Customization
+Customizations that emacs tries to add are stored in a separate file. I don't
+want to declare things like font size or color themes so they reside here.
+#+BEGIN_SRC emacs-lisp
+(setq custom-file "~/.emacs.d/custom.el")
+(load custom-file)
+#+END_SRC
+
+**** Scatch Buffer
+By default, *scratch* is an empty org-mode buffer.  This makes it easy for me
+to write random things down.
+#+BEGIN_SRC emacs-lisp
+(setq default-directory "~/")
+(setq initial-major-mode 'org-mode)
+(setq inhibit-startup-message t)
+(setq initial-scratch-message nil)
+#+END_SRC
+
+**** Regions
+When [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Using-Region.html][operating on regions]], this will remove a highlighted region before text
+insertion, giving the behavior of replacing text.
+#+BEGIN_SRC emacs-lisp
+(delete-selection-mode)
+#+END_SRC
+
+**** OS interoperability
+When [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Clipboard.html][using the clipboard]], setting ~select-enable-clipboard~ to ~t~ I can copy
+and paste between Emacs and the system.
+#+BEGIN_SRC emacs-lisp
+(setq select-enable-clipboard t)
+#+END_SRC
+
+Many languages, linters, and operating systems require the presence of an empty
+[[https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_206][line]] at the bottom of a file.
+#+BEGIN_SRC emacs-lisp
+(setq require-final-newline t)
+#+END_SRC
+
+Enables the mouse wheel, which I prefer over the typical scrolling keychords.
+#+BEGIN_SRC emacs-lisp
+(mouse-wheel-mode t)
+(setq mouse-drag-copy-region nil)
+#+END_SRC
+
+*** Saving
+I keep all backups and auto-save files in the temporary directory to avoid
+littering.
+#+BEGIN_SRC emacs-lisp
+(setq backup-directory-alist
+      `((".*" . ,temporary-file-directory)))
+
+(setq auto-save-file-name-transforms
+      `((".*" ,temporary-file-directory t)))
+
+(setq tramp-backup-directory-alist backup-directory-alist)
+
+(setq auto-save-list-file-prefix temporary-file-directory)
+#+END_SRC
+
+*** Secrets & Auth Sources
+the [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Authentication.html][authinfo]] file keeps sensitive information out of my configuration.  It's not
+checked into git, and needs my gpg key to be accessed.
+#+BEGIN_SRC emacs-lisp
+(setq auth-source-debug t)
+(setq auth-sources '((:source "~/.emacs.d/.authinfo.gpg")))
+#+END_SRC
+
+** UI and Appearance
+[[https://elpa.gnu.org/packages/diminish.html][diminish]] keeps minor modes from cluttering up the modeline. I don't need an
+indication that most things are running.
+#+BEGIN_SRC emacs-lisp
+(use-package diminish :ensure t)
+#+END_SRC
+
+Here only so that I can see a ~λ~ when writing a lambda in a lisp.
+#+BEGIN_SRC emacs-lisp
+(global-prettify-symbols-mode 1)
+#+END_SRC
+
+Prevents the operating system's dialog boxes from popping up with messages from
+Emacs.  They're annoying and get in the way.
+#+BEGIN_SRC emacs-lisp
+(setq use-dialog-box nil)
+#+END_SRC
+
+I recover a little surface area by removing the various bars from the editor.
+When I was learning Emacs having those menus visible was helpful.
+#+BEGIN_SRC emacs-lisp
+(tool-bar-mode -1)
+(menu-bar-mode -1)
+(scroll-bar-mode -1)
+#+END_SRC
+
+Highlights the current line the cursor is on.  Very helpful for not getting lost.
+#+BEGIN_SRC emacs-lisp
+(global-hl-line-mode t)
+#+END_SRC
+
+[[https://www.emacswiki.org/emacs/ShowParenMode][show-paren-mode]] highlights matching pairs of parentheses or brackets. By setting
+~show-paren-style~ to ~mixed~ the enclosed expression will be highlighted
+instead if there is no matching parentheses.
+#+BEGIN_SRC emacs-lisp
+(show-paren-mode)
+(setq show-paren-style 'mixed)
+#+END_SRC
+
+[[https://www.emacswiki.org/emacs/ElectricPair][electric-pair-mode]] will automatically insert a matching delimiter after one is
+inserted, with the cursor moved between them.
+#+BEGIN_SRC emacs-lisp
+(electric-pair-mode 1)
+(electric-indent-mode -1)
+#+END_SRC
+
+[[https://melpa.org/#/rainbow-delimiters][rainbow-delimiters]] highlights delimiters according to their depth.  This makes
+it really easy to see how deeply nested in a loop you are, or where you are in
+a lisp form.
+#+BEGIN_SRC emacs-lisp
+(use-package rainbow-delimiters
+  :ensure t
+  :hook (prog-mode . rainbow-delimiters-mode))
+#+END_SRC
+
+** Navigation
+*** History
+[[https://www.emacswiki.org/emacs/SavePlace][save-place-mode]] moves the cursor to it's last location in the previously visited
+file.
+#+BEGIN_SRC emacs-lisp
+(save-place-mode 1)
+#+END_SRC
+
+Enable auto-revert-mode to automatically update files that change externally to
+Emacs (such as external formatters or git checkouts):
+#+BEGIN_SRC emacs-lisp
+(global-auto-revert-mode)
+#+END_SRC
+
+*** Completion
+**** vertico ecosystem
+[[https://elpa.gnu.org/packages/vertico.html][vertico]] is a minimalistic vertical completion interface similar to the built-in.
+I moved from [[https://melpa.org/#/helm][helm]] after realizing I didn't use most of what it provided. I load
+it with ~savehist-mode~ so that my minibuffer history is preserved.
+#+BEGIN_SRC emacs-lisp
+  (use-package vertico
+    :ensure t
+    :init
+    (vertico-mode)
+    (savehist-mode)
+    :config
+    (setq vertico-cycle t))
+#+END_SRC
+
+[[https://elpa.gnu.org/packages/orderless.html][orderless]] is a completion style that divides a pattern into parts and matches
+those parts in any order.
+#+BEGIN_SRC emacs-lisp
+  (use-package orderless
+    :ensure t
+    :custom
+    (completion-styles '(orderless basic))
+    (completion-category-overrides '((file (styles basic partial-completion)))))
+#+END_SRC
+
+[[https://elpa.gnu.org/packages/marginalia.html][marginalia]] enriches minibuffer completions with additional information.
+#+BEGIN_SRC emacs-lisp
+  (use-package marginalia
+    :ensure t
+    :after vertico
+    :init
+    (marginalia-mode))
+#+END_SRC
+
+[[https://elpa.gnu.org/packages/consult.html][consult]] provides various commands that can be invoked based on completion
+candidates. The ~consult-get-project-root~ function constrains consult to the
+root directory of a git project when in a git directory. 
+#+BEGIN_SRC emacs-lisp
+  (defun consult-get-project-root ()
+    (when (fboundp 'projectile-project-root)
+      (projectile-project-root)))
+
+  (use-package consult
+    :ensure t
+    :bind
+    (("C-s" . consult-line)
+     ("C-r" . consult-history)
+     ("C-c i" . consult-imenu)
+     ("C-c g" . consult-ripgrep))
+    :custom
+    (consult-project-root-function #'consult-get-project-root))
+#+END_SRC
+
+[[https://elpa.gnu.org/packages/embark.html][embark]] lets you take actions on items under cursor in the minibuffer. For
+example: renaming a file, moving a file, etc. [[https://github.com/emacs-straight/embark-consult][embark-consult]] provides additional
+functionality for use with consult.
+#+BEGIN_SRC emacs-lisp
+  (use-package embark
+    :ensure t
+    :bind
+    (("C-." . embark-act)
+     ("C-;" . embark-dwim)
+     ("C-h B" . embark-bindings))
+    :init
+    (setq prefix-help-command #'embark-prefix-help-command))
+
+  (use-package embark-consult
+    :ensure t
+    :hook
+    (embark-collect-mode . consult-preview-at-point-mode))
+#+END_SRC
+
+**** company
+[[https://company-mode.github.io/][company]] is yet another completion framework, for my purposes it is only
+used until I figure out how to make vertico work with eglot.
+#+BEGIN_SRC emacs-lisp
+(use-package company
+  :ensure t
+  :diminish company-mode
+  :hook (eglot-managed-mode . company-mode))
+#+END_SRC
+
+**** which-key
+[[https://elpa.gnu.org/packages/which-key.html][which-key]] will, after a brief delay, popup a list of options for an incomplete
+command.
+#+BEGIN_SRC emacs-lisp
+(use-package which-key
+  :ensure t
+  :diminish which-key-mode
+  :custom
+  (setq which-key-popup-type 'side-window)
+  :init (which-key-mode)) 
+#+END_SRC
+
+*** Project Management
+[[https://github.com/nex3/perspective-el#usage][perspective]] helps me keep the minibuffer clean, and allows me to create groups
+of buffers that make moving between projects and programming languages easier.
+#+BEGIN_SRC emacs-lisp
+(use-package perspective
+  :ensure t
+  :config
+  (persp-mode))
+#+END_SRC
+
+I use [[https://github.com/bbatsov/projectile][projectile]] to quickly switch between the different projects I have.  I
+keep personal and work projects all in their own folders under one directory so
+projectile can easily find everything.
+#+BEGIN_SRC emacs-lisp
+(use-package projectile
+  :ensure t
+  :diminish projectile-mode
+  :config (projectile-mode)
+  :custom ((projectile-completion-system 'vertico))
+  :init
+  (setq projectile-project-search-path '("~/Code/")))
+
+(use-package consult-projectile
+  :ensure t
+  :bind
+  (("C-c p" . consult-projectile)))
+#+END_SRC
+
+** Programming Environment
+*** Version Control
+I use [[https://magit.vc/][Magit]] for interacting with Git through emacs.  It's a much nicer interface
+than most hosted VCS/SCM tools.
+#+BEGIN_SRC emacs-lisp
+(use-package magit
+  :ensure t
+  :custom
+  (magit-git-executable "/usr/bin/git")
+  (vc-follow-symlinks t)
+  :bind (("C-x v" . magit-status)))
+#+END_SRC
+
+I also enable [[https://magit.vc/manual/magit/Commit-Mode-and-Hooks.html][git-commit-mode]] for better editing of commit messages:
+#+BEGIN_SRC emacs-lisp
+(use-package git-commit
+  :ensure t
+  :config
+  (global-git-commit-mode))
+#+END_SRC
+
+*** Language Parsing
+[[https://tree-sitter.github.io/tree-sitter/][tree-sitter]] is an incremental parsing library that provides an intelligent form
+of syntax highlighting.  It's now included with Emacs.
+#+BEGIN_SRC emacs-lisp
+(require 'treesit)
+#+END_SRC
+
+*** Language Server
+[[https://joaotavora.github.io/eglot/][eglot]] is an unintrusive LSP that works well with tree-sitter. [[https://github.com/casouri/eldoc-box][eldoc-box]] makes
+documentation pop up in a childframe under the cursor.
+#+BEGIN_SRC emacs-lisp
+(use-package eglot
+  :ensure t
+  :defer t
+  :bind (("C-c e" . eglot-code-actions))
+  :hook
+  ((typescript-ts-mode . eglot-ensure)
+   (python-ts-mode . eglot-ensure)
+   (python-ts-mode . (lambda () (set-fill-column 80))))
+  :config
+  (add-to-list 'eglot-server-programs '(clojure-ts-mode . ("clojure-lsp"))))
+
+(use-package eldoc-box
+  :ensure t
+  :diminish eldoc-box-hover-at-point-mode
+  :config
+  (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t))
+#+END_SRC
+
+*** Snippets
+[[https://github.com/joaotavora/yasnippet][yasnippet]] is a template system that helps save a lot of time when writing code.
+I also load a package that provides a large library of existing snippets.
+#+BEGIN_SRC emacs-lisp
+(use-package yasnippet
+  :ensure t
+  :diminish yas-minor-mode
+  :config
+  (add-to-list 'yas-snippet-dirs "~/.emacs.d/snippets")
+  :bind (("C-c y i" . yas-insert-snippet)
+         ("C-c y v" . yas-visit-snippet-file)))
+(add-hook 'prog-mode-hook #'yas-minor-mode)
+
+(use-package yasnippet-snippets
+  :ensure t)
+#+END_SRC
+
+*** Structural Editing
+[[https://paredit.org/][paredit]] provides structural editing capabilties when working with lisp dialects.
+#+BEGIN_SRC emacs-lisp
+(use-package paredit
+  :ensure t
+  :diminish paredit-mode
+  :hook
+  ((cider-repl-mode-hook . paredit-mode)
+   (cider-mode-hook . paredit-mode)
+   (clojure-ts-mode . paredit-mode)))
+#+END_SRC
+
+*** ChatGPT
+ChatGPT provides a conversational interface that replaces the google search bar.
+#+BEGIN_SRC emacs-lisp
+(use-package chatgpt-shell
+  :ensure t
+  :custom
+  (setq chatgpt-shell-openai-key
+    (auth-source-pick-first-password :host "api.openai.com")))
+#+END_SRC
+** Scheduling & Organization
+*** org-mode
+I use [[https://orgmode.org/][org-mode]] to manage my notes, documentation, todos, calendar items, etc.
+#+BEGIN_SRC emacs-lisp
+(use-package org
+  :ensure t
+  :config
+  (progn
+    (setq org-agenda-files '("/mnt/media/org/todo.org" "/mnt/media/org/calendar.org")
+	  org-agenda-span 'day
+	  org-log-done t
+	  org-directory "/mnt/media/org/"
+	  org-todo-keywords '((sequence "TODO" "PROGRESS" "|" "DONE"))
+	  org-capture-templates
+	  '(("t" "todo" entry (file "/mnt/media/org/todo.org")
+	     "* TODO %?\n%u\n%a\n" :clock-in t :clock-resume t))
+	  org-refile-targets (quote ((nil :maxlevel . 9)
+			       (org-agenda-files :maxlevel . 9)))))
+  :bind (("C-c a" . org-agenda)
+	 ("C-c c" . org-capture)))
+#+END_SRC
+
+[[https://github.com/marcinkoziej/org-pomodoro][org-pomodoro]] lets me employ the pomodoro technique while working on org todo's.
+#+BEGIN_SRC emacs-lisp
+(use-package org-pomodoro
+  :ensure t
+  :commands (org-pomodoro)
+  :config
+  (setq alert-user-configuration '((((:category . "org-pomodoro")) libnotify nil))))
+#+END_SRC
+
+[[https://github.com/minad/org-modern][org-modern]] provides a modern style to org. that's it.
+#+BEGIN_SRC emacs-lisp
+(use-package org-modern
+  :ensure t
+  :init
+  (global-org-modern-mode))
+#+END_SRC
+
+**** Roam
+[[https://www.orgroam.com/][org-roam]] implements much of the same functionality provided by [[https://roamresearch.com/][Roam]] or [[https://obsidian.md/][Obsidian]]
+in org-mode.  It is a powerful way to build a knowledgebase. [[https://github.com/org-roam/org-roam-ui][org-roam-ui]]
+provides a clean interface for traversing roam nodes.
+#+BEGIN_SRC emacs-lisp
+(use-package org-roam
+  :ensure t
+  :custom
+  (org-roam-directory (file-truename "/mnt/media/org/roam"))
+  :bind (("C-c r l" . org-roam-buffer-toggle)
+	 ("C-c r f" . org-roam-node-find)
+	 ("C-c r g" . org-roam-graph)
+	 ("C-c r i" . org-roam-node-insert)
+	 ("C-c r c" . org-roam-capture)
+	 ;; Dailies
+	 ("C-c r j" . org-roam-dailies-capture-today))
+  :config
+  (setq org-roam-node-display-template (concat "${title:*} " (propertize "${tags:10}" 'face 'org-tag)))
+  (org-roam-db-autosync-mode))
+
+(use-package org-roam-ui
+  :after org-roam
+  :config
+  (setq org-roam-ui-sync-theme t
+	org-roam-ui-follow t
+	org-roam-ui-update-on-save t
+	org-roam-ui-open-on-start t))
+#+END_SRC
+
+*** khalel
+[[https://melpa.org/#/khalel][khalel]] allows me to see my calendar events in the org-agenda which is very nice.
+Under the hood it is using vdirsyncer and khal to manage multiple calendars.
+#+BEGIN_SRC emacs-lisp
+(use-package khalel
+  :ensure t
+  :commands (khalel-export-org-subtree-to-calendar
+	     khalel-import-events
+	     khalel-edit-calendar-event
+	     khalel-add-capture-template)
+  :config
+  (progn
+    (setq khalel-khal-command "khal"
+	  khalel-vdirsyncer-command "vdirsyncer"
+	  khalel-import-org-file (concat org-directory "calendar.org")
+	  khalel-import-org-file-confirm-overwrite nil
+	  khalel-import-end-date- "+7d")))
+#+END_SRC
+
+** Mail and Communication
+*** mu4e
+managing mail with mu4e. I keep this in a separate file because it contains a
+lot of mail-specific information that I don't want to share in git, so the
+mail.el file isn't checked into the repository.
+#+BEGIN_SRC emacs-lisp
+(load "~/.emacs.d/mail")
+#+END_SRC
+
+*** RSS
+[[https://github.com/skeeto/elfeed][elfeed]] is a feed reader for RSS and Atom. Works well enough with Eww.
+#+BEGIN_SRC emacs-lisp
+(use-package elfeed
+  :ensure t
+  bind (("C-x w" . 'elfeed))
+  :config
+  (setq browse-url-browser-function 'eww-browse-url))
+#+END_SRC
+** Languages
+I am gradually replacing the typical language modes with the new modes
+supplied by tree-sitter.  This area remains for language-specific tools.
+*** Clojure
+#+BEGIN_SRC emacs-lisp
+(use-package clojure-ts-mode
+  :ensure t)
+
+(use-package cider
+  :ensure t)
+#+END_SRC
+
+** Miscellaneous
+*** Garbage Collection
+We set the GC threshold lower for interactive use (this undoes a setting from
+=early-init.el=). This needs to be the last thing in the file to get the
+benefits of faster startup.
+#+BEGIN_SRC emacs-lisp
+(setq gc-cons-threshold (* 2 1000 1000))
+#+END_SRC
+
+
