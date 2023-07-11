@@ -9,7 +9,7 @@ keep a few things in mind:
 
 Sometimes I don't adhere to these, it is what it is.
 
-** Package Setup (use-package)
+** Package Setup
 Declaring upstream package archives: [[https://elpa.gnu.org][ELPA]] and [[https://melpa.org/][MELPA]].
 #+BEGIN_SRC emacs-lisp
 (require 'package)
@@ -276,6 +276,7 @@ of buffers that make moving between projects and programming languages easier.
 #+BEGIN_SRC emacs-lisp
 (use-package perspective
   :ensure t
+  :bind (("C-c b" . persp-switch))
   :config
   (persp-mode))
 #+END_SRC
