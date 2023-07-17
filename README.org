@@ -182,70 +182,70 @@ Emacs (such as external formatters or git checkouts):
 I moved from [[https://melpa.org/#/helm][helm]] after realizing I didn't use most of what it provided. I load
 it with ~savehist-mode~ so that my minibuffer history is preserved.
 #+BEGIN_SRC emacs-lisp
-  (use-package vertico
-    :ensure t
-    :init
-    (vertico-mode)
-    (savehist-mode)
-    :config
-    (setq vertico-cycle t))
+(use-package vertico
+  :ensure t
+  :init
+  (vertico-mode)
+  (savehist-mode)
+  :config
+  (setq vertico-cycle t))
 #+END_SRC
 
 [[https://elpa.gnu.org/packages/orderless.html][orderless]] is a completion style that divides a pattern into parts and matches
 those parts in any order.
 #+BEGIN_SRC emacs-lisp
-  (use-package orderless
-    :ensure t
-    :custom
-    (completion-styles '(orderless basic))
-    (completion-category-overrides '((file (styles basic partial-completion)))))
+(use-package orderless
+  :ensure t
+  :custom
+  (completion-styles '(orderless basic))
+  (completion-category-overrides '((file (styles basic partial-completion)))))
 #+END_SRC
 
 [[https://elpa.gnu.org/packages/marginalia.html][marginalia]] enriches minibuffer completions with additional information.
 #+BEGIN_SRC emacs-lisp
-  (use-package marginalia
-    :ensure t
-    :after vertico
-    :init
-    (marginalia-mode))
+(use-package marginalia
+  :ensure t
+  :after vertico
+  :init
+  (marginalia-mode))
 #+END_SRC
 
 [[https://elpa.gnu.org/packages/consult.html][consult]] provides various commands that can be invoked based on completion
 candidates. The ~consult-get-project-root~ function constrains consult to the
 root directory of a git project when in a git directory. 
 #+BEGIN_SRC emacs-lisp
-  (defun consult-get-project-root ()
-    (when (fboundp 'projectile-project-root)
-      (projectile-project-root)))
+(defun consult-get-project-root ()
+  (when (fboundp 'projectile-project-root)
+    (projectile-project-root)))
 
-  (use-package consult
-    :ensure t
-    :bind
-    (("C-s" . consult-line)
-     ("C-r" . consult-history)
-     ("C-c i" . consult-imenu)
-     ("C-c g" . consult-ripgrep))
-    :custom
-    (consult-project-root-function #'consult-get-project-root))
+(use-package consult
+  :ensure t
+  :bind
+  (("C-s" . consult-line)
+   ("C-r" . consult-history)
+   ("C-c i" . consult-imenu)
+   ("C-c g" . consult-ripgrep))
+  :custom
+  (consult-project-root-function #'consult-get-project-root))
 #+END_SRC
 
 [[https://elpa.gnu.org/packages/embark.html][embark]] lets you take actions on items under cursor in the minibuffer. For
 example: renaming a file, moving a file, etc. [[https://github.com/emacs-straight/embark-consult][embark-consult]] provides additional
 functionality for use with consult.
 #+BEGIN_SRC emacs-lisp
-  (use-package embark
-    :ensure t
-    :bind
-    (("C-." . embark-act)
-     ("C-;" . embark-dwim)
-     ("C-h B" . embark-bindings))
-    :init
-    (setq prefix-help-command #'embark-prefix-help-command))
+(use-package embark
+  :ensure t
+  :bind
+  (("C-." . embark-act)
+   ("C-;" . embark-dwim)
+   ("C-h B" . embark-bindings))
+  :init
+  (setq prefix-help-command #'embark-prefix-help-command))
 
-  (use-package embark-consult
-    :ensure t
-    :hook
-    (embark-collect-mode . consult-preview-at-point-mode))
+(use-package embark-consult
+  :ensure t
+  :hook
+  (embark-collect-mode . consult-preview-at-point-mode))
 #+END_SRC
 
 **** company
@@ -254,8 +254,16 @@ used until I figure out how to make vertico work with eglot.
 #+BEGIN_SRC emacs-lisp
 (use-package company
   :ensure t
-  :diminish company-mode
-  :hook (eglot-managed-mode . company-mode))
+  :defer t
+  :custom
+  (company-dabbrev-other-buffers t)
+  (company-dabbrev-code-other-buffers t)
+  (company-show-numbers t)
+  (company-dabbrev-ignore-case t)
+  (company-idle-delay 0.2)
+  (company-global-modes '(not eshell-mode shell-mode))
+  :hook ((eglot-managed-mode . company-mode)
+	 (prog-mode . company-mode)))
 #+END_SRC
 
 **** which-key
@@ -325,6 +333,10 @@ I also enable [[https://magit.vc/manual/magit/Commit-Mode-and-Hooks.html][git-co
 of syntax highlighting.  It's now included with Emacs.
 #+BEGIN_SRC emacs-lisp
 (require 'treesit)
+(add-to-list 'major-mode-remap-alist
+  '((python-mode . python-ts-mode)
+    (typescript-mode . typescript-ts-mode)
+    (clojure-mode . clojure-ts-mode)))
 #+END_SRC
 
 *** Language Server
@@ -336,17 +348,16 @@ documentation pop up in a childframe under the cursor.
   :defer t
   :bind (("C-c e" . eglot-code-actions))
   :hook
-  ((typescript-ts-mode . eglot-ensure)
-   (python-ts-mode . eglot-ensure)
-   (python-ts-mode . (lambda () (set-fill-column 80))))
+  ((typescript-mode . eglot-ensure)
+   (python-mode . eglot-ensure)
+   (python-mode . (lambda () (set-fill-column 80))))
   :config
   (add-to-list 'eglot-server-programs '(clojure-ts-mode . ("clojure-lsp"))))
 
 (use-package eldoc-box
   :ensure t
-  :diminish eldoc-box-hover-at-point-mode
-  :config
-  (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t))
+  :diminish eldoc-box-hover-at-point-mode)
+(add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t)
 #+END_SRC
 
 *** Snippets
@@ -383,7 +394,8 @@ ChatGPT provides a conversational interface that replaces the google search bar.
 #+BEGIN_SRC emacs-lisp
 (use-package chatgpt-shell
   :ensure t
-  :custom
+  :defer t
+  :config
   (setq chatgpt-shell-openai-key
     (auth-source-pick-first-password :host "api.openai.com")))
 #+END_SRC
@@ -488,7 +500,7 @@ mail.el file isn't checked into the repository.
 #+BEGIN_SRC emacs-lisp
 (use-package elfeed
   :ensure t
-  bind (("C-x w" . 'elfeed))
+  :bind (("C-x w" . 'elfeed))
   :config
   (setq browse-url-browser-function 'eww-browse-url))
 #+END_SRC
@@ -504,6 +516,29 @@ supplied by tree-sitter.  This area remains for language-specific tools.
   :ensure t)
 #+END_SRC
 
+*** Python
+#+BEGIN_SRC emacs-lisp
+(use-package python
+  :ensure t
+  :config
+  (setq python-indent-guess-indent-offset-verbose nil))
+
+(use-package poetry
+  :ensure t
+  :deter t
+  :config
+  (setq poetry-tracking-strategy 'switch-buffer)
+  :hook (python-mode . poetry-tracking-mode))
+
+(use-package blacken
+  :ensure t
+  :defer t
+  :custom
+  (blacken-allow-py36 t)
+  (blacken-skip-string-normalization t)
+  :hook (python-mode-hook . blacken-mode))
+
+#+END_SRC
 ** Miscellaneous
 *** Garbage Collection
 We set the GC threshold lower for interactive use (this undoes a setting from
