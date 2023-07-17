@@ -108,11 +108,6 @@ checked into git, and needs my gpg key to be accessed.
 #+END_SRC
 
 ** UI and Appearance
-*laptop only* setting a larger font face for my laptop's terrible resolution.
-#+BEGIN_SRC emacs-lisp
-  (set-face-attribute 'default nil :height 180)
-#+END_SRC
-
 [[https://elpa.gnu.org/packages/diminish.html][diminish]] keeps minor modes from cluttering up the modeline. I don't need an
 indication that most things are running.
 #+BEGIN_SRC emacs-lisp
@@ -187,51 +182,51 @@ Emacs (such as external formatters or git checkouts):
 I moved from [[https://melpa.org/#/helm][helm]] after realizing I didn't use most of what it provided. I load
 it with ~savehist-mode~ so that my minibuffer history is preserved.
 #+BEGIN_SRC emacs-lisp
-  (use-package vertico
-    :ensure t
-    :init
-    (vertico-mode)
-    (savehist-mode)
-    :config
-    (setq vertico-cycle t))
+(use-package vertico
+  :ensure t
+  :init
+  (vertico-mode)
+  (savehist-mode)
+  :config
+  (setq vertico-cycle t))
 #+END_SRC
 
 [[https://elpa.gnu.org/packages/orderless.html][orderless]] is a completion style that divides a pattern into parts and matches
 those parts in any order.
 #+BEGIN_SRC emacs-lisp
-  (use-package orderless
-    :ensure t
-    :custom
-    (completion-styles '(orderless basic))
-    (completion-category-overrides '((file (styles basic partial-completion)))))
+(use-package orderless
+  :ensure t
+  :custom
+  (completion-styles '(orderless basic))
+  (completion-category-overrides '((file (styles basic partial-completion)))))
 #+END_SRC
 
 [[https://elpa.gnu.org/packages/marginalia.html][marginalia]] enriches minibuffer completions with additional information.
 #+BEGIN_SRC emacs-lisp
-  (use-package marginalia
-    :ensure t
-    :after vertico
-    :init
-    (marginalia-mode))
+(use-package marginalia
+  :ensure t
+  :after vertico
+  :init
+  (marginalia-mode))
 #+END_SRC
 
 [[https://elpa.gnu.org/packages/consult.html][consult]] provides various commands that can be invoked based on completion
 candidates. The ~consult-get-project-root~ function constrains consult to the
 root directory of a git project when in a git directory. 
 #+BEGIN_SRC emacs-lisp
-  (defun consult-get-project-root ()
-    (when (fboundp 'projectile-project-root)
-      (projectile-project-root)))
+(defun consult-get-project-root ()
+  (when (fboundp 'projectile-project-root)
+    (projectile-project-root)))
 
-  (use-package consult
-    :ensure t
-    :bind
-    (("C-s" . consult-line)
-     ("C-r" . consult-history)
-     ("C-c i" . consult-imenu)
-     ("C-c g" . consult-ripgrep))
-    :custom
-    (consult-project-root-function #'consult-get-project-root))
+(use-package consult
+  :ensure t
+  :bind
+  (("C-s" . consult-line)
+   ("C-r" . consult-history)
+   ("C-c i" . consult-imenu)
+   ("C-c g" . consult-ripgrep))
+  :custom
+  (consult-project-root-function #'consult-get-project-root))
 #+END_SRC
 
 [[https://elpa.gnu.org/packages/embark.html][embark]] lets you take actions on items under cursor in the minibuffer. For
@@ -412,13 +407,13 @@ I use [[https://orgmode.org/][org-mode]] to manage my notes, documentation, todo
   :ensure t
   :config
   (progn
-    (setq org-agenda-files '("~/.org/todo.org" "~/.org/calendar.org")
+    (setq org-agenda-files '("/mnt/media/org/todo.org" "/mnt/media/org/calendar.org")
 	  org-agenda-span 'day
 	  org-log-done t
-	  org-directory "~/.org/"
+	  org-directory "/mnt/media/org/"
 	  org-todo-keywords '((sequence "TODO" "PROGRESS" "|" "DONE"))
 	  org-capture-templates
-	  '(("t" "todo" entry (file "~/.org/todo.org")
+	  '(("t" "todo" entry (file "/mnt/media/org/todo.org")
 	     "* TODO %?\n%u\n%a\n" :clock-in t :clock-resume t))
 	  org-refile-targets (quote ((nil :maxlevel . 9)
 			       (org-agenda-files :maxlevel . 9)))))
@@ -451,7 +446,7 @@ provides a clean interface for traversing roam nodes.
 (use-package org-roam
   :ensure t
   :custom
-  (org-roam-directory (file-truename "~/.org/roam"))
+  (org-roam-directory (file-truename "/mnt/media/org/roam"))
   :bind (("C-c r l" . org-roam-buffer-toggle)
 	 ("C-c r f" . org-roam-node-find)
 	 ("C-c r g" . org-roam-graph)
