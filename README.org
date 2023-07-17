@@ -108,6 +108,11 @@ checked into git, and needs my gpg key to be accessed.
 #+END_SRC
 
 ** UI and Appearance
+*laptop only* setting a larger font face for my laptop's terrible resolution.
+#+BEGIN_SRC emacs-lisp
+  (set-face-attribute 'default nil :height 180)
+#+END_SRC
+
 [[https://elpa.gnu.org/packages/diminish.html][diminish]] keeps minor modes from cluttering up the modeline. I don't need an
 indication that most things are running.
 #+BEGIN_SRC emacs-lisp
@@ -233,19 +238,19 @@ root directory of a git project when in a git directory.
 example: renaming a file, moving a file, etc. [[https://github.com/emacs-straight/embark-consult][embark-consult]] provides additional
 functionality for use with consult.
 #+BEGIN_SRC emacs-lisp
-  (use-package embark
-    :ensure t
-    :bind
-    (("C-." . embark-act)
-     ("C-;" . embark-dwim)
-     ("C-h B" . embark-bindings))
-    :init
-    (setq prefix-help-command #'embark-prefix-help-command))
+(use-package embark
+  :ensure t
+  :bind
+  (("C-." . embark-act)
+   ("C-;" . embark-dwim)
+   ("C-h B" . embark-bindings))
+  :init
+  (setq prefix-help-command #'embark-prefix-help-command))
 
-  (use-package embark-consult
-    :ensure t
-    :hook
-    (embark-collect-mode . consult-preview-at-point-mode))
+(use-package embark-consult
+  :ensure t
+  :hook
+  (embark-collect-mode . consult-preview-at-point-mode))
 #+END_SRC
 
 **** company
@@ -254,8 +259,16 @@ used until I figure out how to make vertico work with eglot.
 #+BEGIN_SRC emacs-lisp
 (use-package company
   :ensure t
-  :diminish company-mode
-  :hook (eglot-managed-mode . company-mode))
+  :defer t
+  :custom
+  (company-dabbrev-other-buffers t)
+  (company-dabbrev-code-other-buffers t)
+  (company-show-numbers t)
+  (company-dabbrev-ignore-case t)
+  (company-idle-delay 0.2)
+  (company-global-modes '(not eshell-mode shell-mode))
+  :hook ((eglot-managed-mode . company-mode)
+	 (prog-mode . company-mode)))
 #+END_SRC
 
 **** which-key
@@ -325,6 +338,10 @@ I also enable [[https://magit.vc/manual/magit/Commit-Mode-and-Hooks.html][git-co
 of syntax highlighting.  It's now included with Emacs.
 #+BEGIN_SRC emacs-lisp
 (require 'treesit)
+(add-to-list 'major-mode-remap-alist
+  '((python-mode . python-ts-mode)
+    (typescript-mode . typescript-ts-mode)
+    (clojure-mode . clojure-ts-mode)))
 #+END_SRC
 
 *** Language Server
@@ -336,17 +353,16 @@ documentation pop up in a childframe under the cursor.
   :defer t
   :bind (("C-c e" . eglot-code-actions))
   :hook
-  ((typescript-ts-mode . eglot-ensure)
-   (python-ts-mode . eglot-ensure)
-   (python-ts-mode . (lambda () (set-fill-column 80))))
+  ((typescript-mode . eglot-ensure)
+   (python-mode . eglot-ensure)
+   (python-mode . (lambda () (set-fill-column 80))))
   :config
   (add-to-list 'eglot-server-programs '(clojure-ts-mode . ("clojure-lsp"))))
 
 (use-package eldoc-box
   :ensure t
-  :diminish eldoc-box-hover-at-point-mode
-  :config
-  (add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t))
+  :diminish eldoc-box-hover-at-point-mode)
+(add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t)
 #+END_SRC
 
 *** Snippets
@@ -383,7 +399,8 @@ ChatGPT provides a conversational interface that replaces the google search bar.
 #+BEGIN_SRC emacs-lisp
 (use-package chatgpt-shell
   :ensure t
-  :custom
+  :defer t
+  :config
   (setq chatgpt-shell-openai-key
     (auth-source-pick-first-password :host "api.openai.com")))
 #+END_SRC
@@ -395,13 +412,13 @@ I use [[https://orgmode.org/][org-mode]] to manage my notes, documentation, todo
   :ensure t
   :config
   (progn
-    (setq org-agenda-files '("/mnt/media/org/todo.org" "/mnt/media/org/calendar.org")
+    (setq org-agenda-files '("~/.org/todo.org" "~/.org/calendar.org")
 	  org-agenda-span 'day
 	  org-log-done t
-	  org-directory "/mnt/media/org/"
+	  org-directory "~/.org/"
 	  org-todo-keywords '((sequence "TODO" "PROGRESS" "|" "DONE"))
 	  org-capture-templates
-	  '(("t" "todo" entry (file "/mnt/media/org/todo.org")
+	  '(("t" "todo" entry (file "~/.org/todo.org")
 	     "* TODO %?\n%u\n%a\n" :clock-in t :clock-resume t))
 	  org-refile-targets (quote ((nil :maxlevel . 9)
 			       (org-agenda-files :maxlevel . 9)))))
@@ -434,7 +451,7 @@ provides a clean interface for traversing roam nodes.
 (use-package org-roam
   :ensure t
   :custom
-  (org-roam-directory (file-truename "/mnt/media/org/roam"))
+  (org-roam-directory (file-truename "~/.org/roam"))
   :bind (("C-c r l" . org-roam-buffer-toggle)
 	 ("C-c r f" . org-roam-node-find)
 	 ("C-c r g" . org-roam-graph)
@@ -488,7 +505,7 @@ mail.el file isn't checked into the repository.
 #+BEGIN_SRC emacs-lisp
 (use-package elfeed
   :ensure t
-  bind (("C-x w" . 'elfeed))
+  :bind (("C-x w" . 'elfeed))
   :config
   (setq browse-url-browser-function 'eww-browse-url))
 #+END_SRC
@@ -504,6 +521,29 @@ supplied by tree-sitter.  This area remains for language-specific tools.
   :ensure t)
 #+END_SRC
 
+*** Python
+#+BEGIN_SRC emacs-lisp
+(use-package python
+  :ensure t
+  :config
+  (setq python-indent-guess-indent-offset-verbose nil))
+
+(use-package poetry
+  :ensure t
+  :deter t
+  :config
+  (setq poetry-tracking-strategy 'switch-buffer)
+  :hook (python-mode . poetry-tracking-mode))
+
+(use-package blacken
+  :ensure t
+  :defer t
+  :custom
+  (blacken-allow-py36 t)
+  (blacken-skip-string-normalization t)
+  :hook (python-mode-hook . blacken-mode))
+
+#+END_SRC
 ** Miscellaneous
 *** Garbage Collection
 We set the GC threshold lower for interactive use (this undoes a setting from
