@@ -108,6 +108,14 @@ checked into git, and needs my gpg key to be accessed.
 #+END_SRC
 
 ** UI and Appearance
+I'm ensuring that I use ligature-friendly fonts. This is just for aesthetics it
+doesn't help with anything.
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'default-frame-alist '(font . "Fira Code"))
+(set-face-attribute 'default t :font "Fira Code")
+#+END_SRC
+
+*** Interface
 [[https://elpa.gnu.org/packages/diminish.html][diminish]] keeps minor modes from cluttering up the modeline. I don't need an
 indication that most things are running.
 #+BEGIN_SRC emacs-lisp
@@ -138,6 +146,11 @@ Highlights the current line the cursor is on.  Very helpful for not getting lost
 (global-hl-line-mode t)
 #+END_SRC
 
+Lets me see what line and column number I'm on.  I obsess about this.
+#+BEGIN_SRC emacs-lisp
+(column-number-mode)
+#+END_SRC
+*** Parens
 [[https://www.emacswiki.org/emacs/ShowParenMode][show-paren-mode]] highlights matching pairs of parentheses or brackets. By setting
 ~show-paren-style~ to ~mixed~ the enclosed expression will be highlighted
 instead if there is no matching parentheses.
@@ -160,6 +173,45 @@ a lisp form.
 (use-package rainbow-delimiters
   :ensure t
   :hook (prog-mode . rainbow-delimiters-mode))
+#+END_SRC
+*** Ligatures
+A full ligature configuration for Cascadia and FiraCode fonts. Just try not to
+look at this section if you don't have to.
+#+BEGIN_SRC emacs-lisp
+(use-package ligature
+  :ensure t
+  :config
+  (ligature-set-ligatures 't '("www"))
+  (ligature-set-ligatures 'eww-mode '("ff" "fi" "ffi"))
+  (ligature-set-ligatures 'prog-mode
+                        '(("=" (rx (+ (or ">" "<" "|" "/" "~" ":" "!" "="))))
+                          (";" (rx (+ ";")))
+                          ("&" (rx (+ "&")))
+                          ("!" (rx (+ (or "=" "!" "\." ":" "~"))))
+                          ("?" (rx (or ":" "=" "\." (+ "?"))))
+                          ("%" (rx (+ "%")))
+                          ("|" (rx (+ (or ">" "<" "|" "/" ":" "!" "}" "\]"
+                                          "-" "=" ))))
+                          ("\\" (rx (or "/" (+ "\\"))))
+                          ("+" (rx (or ">" (+ "+"))))
+                          (":" (rx (or ">" "<" "=" "//" ":=" (+ ":"))))
+                          ("/" (rx (+ (or ">"  "<" "|" "/" "\\" "\*" ":" "!"
+                                          "="))))
+                          ("\." (rx (or "=" "-" "\?" "\.=" "\.<" (+ "\."))))
+                          ("-" (rx (+ (or ">" "<" "|" "~" "-"))))
+                          ("*" (rx (or ">" "/" ")" (+ "*"))))
+                          ("w" (rx (+ "w")))
+                          ("<" (rx (+ (or "\+" "\*" "\$" "<" ">" ":" "~"  "!"
+                                          "-"  "/" "|" "="))))
+                          (">" (rx (+ (or ">" "<" "|" "/" ":" "=" "-"))))
+                          ("#" (rx (or ":" "=" "!" "(" "\?" "\[" "{" "_(" "_"
+                                       (+ "#"))))
+                          ("~" (rx (or ">" "=" "-" "@" "~>" (+ "~"))))
+                          ("_" (rx (+ (or "_" "|"))))
+                          ("0" (rx (and "x" (+ (in "A-F" "a-f" "0-9")))))
+                          "Fl"  "Tl"  "fi"  "fj"  "fl"  "ft"
+                          "{|"  "[|"  "]#"  "(*"  "}#"  "$>"  "^="))
+  (global-ligature-mode t))
 #+END_SRC
 
 ** Navigation
@@ -255,6 +307,7 @@ used until I figure out how to make vertico work with eglot.
 (use-package company
   :ensure t
   :defer t
+  :diminish t
   :custom
   (company-dabbrev-other-buffers t)
   (company-dabbrev-code-other-buffers t)
@@ -350,9 +403,7 @@ documentation pop up in a childframe under the cursor.
   :hook
   ((typescript-mode . eglot-ensure)
    (python-mode . eglot-ensure)
-   (python-mode . (lambda () (set-fill-column 80))))
-  :config
-  (add-to-list 'eglot-server-programs '(clojure-ts-mode . ("clojure-lsp"))))
+   (python-mode . (lambda () (set-fill-column 88)))))
 
 (use-package eldoc-box
   :ensure t
@@ -500,7 +551,7 @@ mail.el file isn't checked into the repository.
 #+BEGIN_SRC emacs-lisp
 (use-package elfeed
   :ensure t
-  :bind (("C-x w" . 'elfeed))
+  :bind ("C-x w" . 'elfeed)
   :config
   (setq browse-url-browser-function 'eww-browse-url))
 #+END_SRC
@@ -509,13 +560,24 @@ I am gradually replacing the typical language modes with the new modes
 supplied by tree-sitter.  This area remains for language-specific tools.
 *** Clojure
 #+BEGIN_SRC emacs-lisp
-(use-package clojure-ts-mode
-  :ensure t)
-
 (use-package cider
-  :ensure t)
-#+END_SRC
+  :ensure t
+  :config
+  (setq cider-clojure-cli-global-options "-A:portal"))
 
+(defun portal.api/open ()
+  (interactive)
+  (cider-nrepl-sync-request:eval
+    "(do (ns dev) (def portal ((requiring-resolve 'portal.api/open))) (add-tap (requiring-resolve 'portal.api/submit)))"))
+
+(defun portal.api/clear ()
+  (interactive)
+  (cider-nrepl-sync-request:eval "(portal.api/clear)"))
+
+(defun portal.api/close ()
+  (interactive)
+  (cider-nrepl-sync-request:eval "(portal.api/close)"))
+#+END_SRC
 *** Python
 #+BEGIN_SRC emacs-lisp
 (use-package python
@@ -534,7 +596,6 @@ supplied by tree-sitter.  This area remains for language-specific tools.
   :ensure t
   :defer t
   :custom
-  (blacken-allow-py36 t)
   (blacken-skip-string-normalization t)
   :hook (python-mode-hook . blacken-mode))
 
