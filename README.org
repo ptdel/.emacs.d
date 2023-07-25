@@ -401,9 +401,14 @@ documentation pop up in a childframe under the cursor.
   :defer t
   :bind (("C-c e" . eglot-code-actions))
   :hook
-  ((typescript-mode . eglot-ensure)
+  ((clojure-mode . eglot-ensure)
+   (typescript-mode . eglot-ensure)
    (python-mode . eglot-ensure)
-   (python-mode . (lambda () (set-fill-column 88)))))
+   (python-mode . (lambda () (set-fill-column 88))))
+  :custom
+  (with-eval-after-load 'eglot
+    (add-to-list 'eglot-server-programs
+		 '(clojure-ts-mode . ("clojure-lsp")))))
 
 (use-package eldoc-box
   :ensure t
