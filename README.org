@@ -565,6 +565,9 @@ I am gradually replacing the typical language modes with the new modes
 supplied by tree-sitter.  This area remains for language-specific tools.
 *** Clojure
 #+BEGIN_SRC emacs-lisp
+(use-package clojure-mode
+  :ensure t)
+
 (use-package cider
   :ensure t
   :config
@@ -592,7 +595,7 @@ supplied by tree-sitter.  This area remains for language-specific tools.
 
 (use-package poetry
   :ensure t
-  :deter t
+  :defer t
   :config
   (setq poetry-tracking-strategy 'switch-buffer)
   :hook (python-mode . poetry-tracking-mode))
