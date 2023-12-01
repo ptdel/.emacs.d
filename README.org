@@ -122,7 +122,7 @@ indication that most things are running.
 (use-package diminish :ensure t)
 #+END_SRC
 
-Here only so that I can see a ~λ~ when writing a lambda in a lisp.
+displaying certain words in their greek letter makes me feel smart and superior
 #+BEGIN_SRC emacs-lisp
 (global-prettify-symbols-mode 1)
 #+END_SRC
@@ -195,7 +195,7 @@ look at this section if you don't have to.
                           ("\\" (rx (or "/" (+ "\\"))))
                           ("+" (rx (or ">" (+ "+"))))
                           (":" (rx (or ">" "<" "=" "//" ":=" (+ ":"))))
-                          ("/" (rx (+ (or ">"  "<" "|" "/" "\\" "\*" ":" "!"
+                          ("/" (rx (+ (or ">"  "<" "|" "/" "\\" "\*" "!"
                                           "="))))
                           ("\." (rx (or "=" "-" "\?" "\.=" "\.<" (+ "\."))))
                           ("-" (rx (+ (or ">" "<" "|" "~" "-"))))
@@ -248,9 +248,9 @@ those parts in any order.
 #+BEGIN_SRC emacs-lisp
 (use-package orderless
   :ensure t
-  :custom
-  (completion-styles '(orderless basic))
-  (completion-category-overrides '((file (styles basic partial-completion)))))
+  :config
+  (setq completion-styles '(orderless basic partial-completion)
+	completion-category-overrides '((eglot (styles . (basic))))))
 #+END_SRC
 
 [[https://elpa.gnu.org/packages/marginalia.html][marginalia]] enriches minibuffer completions with additional information.
@@ -300,23 +300,22 @@ functionality for use with consult.
   (embark-collect-mode . consult-preview-at-point-mode))
 #+END_SRC
 
-**** company
-[[https://company-mode.github.io/][company]] is yet another completion framework, for my purposes it is only
-used until I figure out how to make vertico work with eglot.
+[[https://github.com/minad/corfu][corfu]] is a minimalisting completion-at-point framework that works well with
+vertico.
 #+BEGIN_SRC emacs-lisp
-(use-package company
+(use-package corfu
   :ensure t
-  :defer t
-  :diminish t
   :custom
-  (company-dabbrev-other-buffers t)
-  (company-dabbrev-code-other-buffers t)
-  (company-show-numbers t)
-  (company-dabbrev-ignore-case t)
-  (company-idle-delay 0.2)
-  (company-global-modes '(not eshell-mode shell-mode))
-  :hook ((eglot-managed-mode . company-mode)
-	 (prog-mode . company-mode)))
+  (corfu-auto t)
+  (corfu-quit-no-match t)
+  :init
+  (global-corfu-mode))
+
+  ;; (use-package cape
+  ;;   :ensure t
+  ;;   :init
+  ;;   (add-to-list 'completion-at-point-functions #'cape-file)
+  ;;   (add-to-list 'completion-at-point-functions #'cape-line))
 #+END_SRC
 
 **** which-key
@@ -391,7 +390,13 @@ of syntax highlighting.  It's now included with Emacs.
     (typescript-mode . typescript-ts-mode)
     (clojure-mode . clojure-ts-mode)))
 #+END_SRC
-
+[[https://github.com/radian-software/apheleia][apheleia]] is a formatter that works for multiple languages.
+#+BEGIN_SRC emacs-lisp
+(use-package apheleia
+  :ensure t
+  :config
+  (apheleia-global-mode +1))
+#+END_SRC
 *** Language Server
 [[https://joaotavora.github.io/eglot/][eglot]] is an unintrusive LSP that works well with tree-sitter. [[https://github.com/casouri/eldoc-box][eldoc-box]] makes
 documentation pop up in a childframe under the cursor.
@@ -404,16 +409,9 @@ documentation pop up in a childframe under the cursor.
   ((clojure-mode . eglot-ensure)
    (typescript-mode . eglot-ensure)
    (python-mode . eglot-ensure)
-   (python-mode . (lambda () (set-fill-column 88))))
-  :custom
-  (with-eval-after-load 'eglot
-    (add-to-list 'eglot-server-programs
-		 '(clojure-ts-mode . ("clojure-lsp")))))
+   (python-mode . (lambda () (set-fill-column 88)))))
 
-(use-package eldoc-box
-  :ensure t
-  :diminish eldoc-box-hover-at-point-mode)
-(add-hook 'eglot-managed-mode-hook #'eldoc-box-hover-at-point-mode t)
+(setq eldoc-echo-area-use-multiline-p nil)
 #+END_SRC
 
 *** Snippets
@@ -436,13 +434,13 @@ I also load a package that provides a large library of existing snippets.
 *** Structural Editing
 [[https://paredit.org/][paredit]] provides structural editing capabilties when working with lisp dialects.
 #+BEGIN_SRC emacs-lisp
-(use-package paredit
-  :ensure t
-  :diminish paredit-mode
-  :hook
-  ((cider-repl-mode-hook . paredit-mode)
-   (cider-mode-hook . paredit-mode)
-   (clojure-ts-mode . paredit-mode)))
+  (use-package paredit
+    :ensure t
+    :diminish paredit-mode
+    :hook
+    ((cider-repl-mode-hook . paredit-mode)
+     (cider-mode-hook . paredit-mode)
+     (clojure-ts-mode . paredit-mode)))
 #+END_SRC
 
 *** ChatGPT
@@ -568,6 +566,9 @@ supplied by tree-sitter.  This area remains for language-specific tools.
 (use-package clojure-mode
   :ensure t)
 
+ (use-package clj-deps-new
+  :ensure t)
+
 (use-package cider
   :ensure t
   :config
@@ -598,15 +599,17 @@ supplied by tree-sitter.  This area remains for language-specific tools.
   :defer t
   :config
   (setq poetry-tracking-strategy 'switch-buffer)
-  :hook (python-mode . poetry-tracking-mode))
+  :hook ((python-mode . poetry-tracking-mode)))
+#+END_SRC
+*** TypeScript
+#+BEGIN_SRC emacs-lisp
+(use-package typescript-mode
+  :ensure t)
 
-(use-package blacken
+(use-package vue-mode
   :ensure t
-  :defer t
-  :custom
-  (blacken-skip-string-normalization t)
-  :hook (python-mode-hook . blacken-mode))
-
+  :config
+  (setq mmm-submode-decoration-level 0))
 #+END_SRC
 ** Miscellaneous
 *** Garbage Collection
@@ -616,5 +619,3 @@ benefits of faster startup.
 #+BEGIN_SRC emacs-lisp
 (setq gc-cons-threshold (* 2 1000 1000))
 #+END_SRC
-
-
